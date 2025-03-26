@@ -88,3 +88,19 @@
   background-color: #ffffff;
   color: #222;
 }
+
+.login-container,
+.register-container {
+  margin: auto;
+  width: 50%;
+  padding: 10px;
+  text-align: center;
+}
+
+form div {
+  margin-bottom: 10px;
+}
+
+button {
+  margin-top: 10px;
+}
