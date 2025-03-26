@@ -17,13 +17,17 @@ const LoginPage = ({ onLoginSuccess }) => {
 
       const data = await response.json();
       if (response.ok) {
-        onLoginSuccess();
-        navigate('/app');
+        localStorage.setItem('authToken', data.token); // store the token (mock or real)
+        onLoginSuccess(data.token); // notify App.js to update auth state
+        navigate('/dashboard'); 
+        
       } else {
         alert(data.message || 'Login failed');
       }
     } catch (error) {
-      alert('Error logging in');
+      console.error('Login error:', error);
+      alert('Error logging in: ' + error.message);
+    
     }
   };
 
@@ -35,7 +39,7 @@ const LoginPage = ({ onLoginSuccess }) => {
       <input type="text" placeholder="Username" onChange={e => setUsername(e.target.value)} />
       <input type="password" placeholder="Password" onChange={e => setPassword(e.target.value)} />
       <button onClick={handleLogin}>Login</button>
-      <p>Don’t have an account? <Link to="/register">Register</Link></p>
+      <p>Don't have an account? <Link to="/register">Register</Link></p>
     </div>
     </div>
   );
