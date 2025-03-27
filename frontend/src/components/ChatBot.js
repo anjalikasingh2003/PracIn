@@ -15,6 +15,8 @@ const hintMessages = [
   "Want to try the next one or need a small push? 🚀"
 ];
 
+
+
 function ChatBot({ darkMode }) {
   const [messages, setMessages] = useState([
     { sender: 'bot', text: 'Hi! I’m your MAANG DSA interviewer 👨‍💻. Let’s start when you’re ready.' }

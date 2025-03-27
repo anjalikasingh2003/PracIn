@@ -1,4 +1,5 @@
 import React, { useEffect, useState } from 'react';
+import '../styles/navbar.css';
 
 const Navbar = ({ showTimer, toggleTimer, isInterviewStarted }) => {
   const [seconds, setSeconds] = useState(0);
@@ -21,10 +22,10 @@ const Navbar = ({ showTimer, toggleTimer, isInterviewStarted }) => {
 
   return (
     <div className="navbar">
-      <h2>💻 InterviewBot</h2>
+      <h1 className="gradient-text">💻 PracIn</h1>
       <div className="nav-buttons">
-        <button onClick={() => window.location.reload()}>New Interview</button>
-        <button onClick={toggleTimer}>
+        <button className="nav-button" onClick={() => window.location.reload()}>New Interview</button>
+        <button className="nav-button" onClick={toggleTimer}>
           {showTimer ? 'Hide Timer' : 'Show Timer'}
         </button>
         {showTimer && <span className="timer">{formatTime(seconds)}</span>}
