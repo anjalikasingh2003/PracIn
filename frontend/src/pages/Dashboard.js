@@ -26,18 +26,8 @@ const Dashboard = ({ onLogout }) => {
       <div className="auth-container">
         <button onClick={handleStartInterview}>🎤 Take Interview</button>
 
-        <h3>📜 Interview History</h3>
-        <ul style={{ textAlign: 'left' }}>
-          {interviews.length === 0 ? (
-            <p>No interviews taken yet.</p>
-          ) : (
-            interviews.map((item, index) => (
-              <li key={index}>
-                <strong>{item.date}</strong> — Score: {item.score}
-              </li>
-            ))
-          )}
-        </ul>
+       
+      
 
         <button onClick={onLogout} style={{ marginTop: '20px', backgroundColor: '#ff4d4d' }}>
           🚪 Logout
