@@ -67,6 +67,7 @@ To test the PracIn application locally or in a development environment, follow t
 ```bash
 git clone https://github.com/your-username/PracIn.git
 cd PracIn
+```
 
 ### 2. Frontend
 
@@ -74,6 +75,7 @@ cd PracIn
 cd frontend
 npm install
 npm start
+```
 
 ### 3. Backend
 
@@ -82,3 +84,4 @@ Then in another terminal
 ```bash
 cd allBackends
 python3 app.py
+```
