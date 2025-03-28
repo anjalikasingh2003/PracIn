@@ -68,44 +68,40 @@ function ChatBot({ darkMode, code }) {
   const handleSend = async (customInput) => {
     const messageText = customInput || input;
     if (!messageText.trim()) return;
-
+  
     const newUserMessage = { sender: 'user', text: messageText };
-    const newMessages = [...messages, newUserMessage];
-    setMessages(newMessages);
+    setMessages((prev) => [...prev, newUserMessage]);
     setInput('');
     setLoading(true);
-
+  
     try {
-      // Check for code review command
-      if (
-        messageText.toLowerCase().includes("review my code") ||
-        messageText.toLowerCase().includes("give feedback on my code") ||
-        messageText.toLowerCase().includes("analyze my code")
-      ) {
+      // Check if it's a code review request
+      const isCodeReview = ["review my code", "give feedback on my code", "analyze my code"]
+        .some(cmd => messageText.toLowerCase().includes(cmd));
+  
+      if (isCodeReview) {
         const reviewRes = await axios.post('http://localhost:5002/review-code', {
           code: code || "// No code provided.",
-          language: 'cpp' // Make this dynamic later if needed
+          language: 'cpp'
         });
-
+  
         const botResponse = { sender: 'bot', text: reviewRes.data.content };
         setMessages((prev) => [...prev, botResponse]);
         speakText(reviewRes.data.content);
         return;
       }
-
-      // Default chat flow
+  
+      // Default interview/chat flow
       const lastBotMessage = messages.slice().reverse().find(msg => msg.sender === 'bot');
       const payload = {
         question: lastBotMessage?.text || '',
         answer: messageText,
       };
-
+  
       const res = await axios.post('http://localhost:5002/ask', payload);
       const botResponse = { sender: 'bot', text: res.data.content };
-
       setMessages((prev) => [...prev, botResponse]);
       speakText(res.data.content);
-
     } catch (err) {
       console.error(err);
       setMessages((prev) => [...prev, {

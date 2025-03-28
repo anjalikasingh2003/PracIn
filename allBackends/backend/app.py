@@ -5,6 +5,10 @@ from flask_cors import CORS
 from dotenv import load_dotenv
 import traceback
 import tiktoken
+import requests
+from transformers import pipeline
+import torch
+
 
 load_dotenv()
 
@@ -22,9 +26,8 @@ azure_client = AzureOpenAI(
     azure_endpoint=azure_endpoint,
 )
 
-# OpenAI config (for /review-code)
-openai_key = os.getenv("OPENAI_API_KEY")
-openai_client = OpenAI(api_key=openai_key)
+code_review_pipeline = pipeline("text-generation", model="tiiuae/falcon-7b-instruct")  # or similar
+
 
 @app.route("/ask", methods=["POST"])
 def ask():
@@ -64,6 +67,9 @@ def ask():
     except Exception as e:
         traceback.print_exc()
         return jsonify({"error": str(e)}), 500
+    
+
+
 
 @app.route("/review-code", methods=["POST"])
 def review_code():
@@ -76,36 +82,44 @@ def review_code():
             return jsonify({"error": "No code provided"}), 400
 
         prompt = f"""
-            You are a senior developer and expert in reviewing code.
+You are a helpful code reviewer. Analyze the following {language.upper()} code and provide constructive feedback.
 
-            Please analyze the following {language.upper()} code:
+CODE:
+{code}
 
-            ```
-            {code}
-            ```
+Focus on:
+- Syntax or logical errors
+- Best practices
+- Optimization suggestions
+- Readability improvements
 
-            Provide detailed feedback including:
+Your feedback:
+"""
 
-            - Syntax or logical errors
-            - Code optimization tips
-            - Best practices
-            - Suggestions for cleaner structure
-
-            Use markdown formatting and bullet points.
-            """
-
-        response = openai_client.chat.completions.create(
-            model="gpt-3.5-turbo",
-            messages=[{"role": "user", "content": prompt}],
+        # Generate feedback
+        response = code_review_pipeline(
+            prompt,
+            max_new_tokens=250,
             temperature=0.7,
-            max_tokens=800
-        )
+            top_k=50,
+            top_p=0.95,
+            do_sample=True,
+            pad_token_id=tokenizer.eos_token_id  # only if needed
+        )   
+        print("Pipeline raw response:", response)
+        generated_text = response[0]["generated_text"]
+        print(generated_text)
+        # Clean output (optional)
+        feedback = generated_text.replace(prompt, "").strip()
+        print(feedback)
 
-        return jsonify({'content': response.choices[0].message.content})
+        return jsonify({"content": feedback})
 
     except Exception as e:
+        import traceback
         traceback.print_exc()
         return jsonify({'error': str(e)}), 500
+
 
 if __name__ == '__main__':
     app.run(debug=True, port=5002)
