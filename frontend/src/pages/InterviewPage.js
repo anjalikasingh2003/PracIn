@@ -14,7 +14,7 @@ const InterviewPage = ({ darkMode, setDarkMode, showTimer, toggleTimer, onLogout
 
   const runCode = async () => {
     try {
-      const res = await axios.post('http://localhost:5000/run', {
+      const res = await axios.post('http://localhost:5001/run', {
         code: code,
         language: 'cpp', // or 'python', make it dynamic later
       });
@@ -36,7 +36,7 @@ const InterviewPage = ({ darkMode, setDarkMode, showTimer, toggleTimer, onLogout
             <pre>{output}</pre>
           </div>
         </div>
-        <ChatBot darkMode={darkMode} />
+        <ChatBot darkMode={darkMode} code={code}/>
         <CameraFeed />
       </div>
     </>

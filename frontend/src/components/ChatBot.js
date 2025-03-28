@@ -6,18 +6,7 @@ import '../styles/ChatBot.css';
 const speechKey = process.env.REACT_APP_AZURE_SPEECH_KEY;
 const serviceRegion = process.env.REACT_APP_AZURE_REGION;
 
-const inactivityInterval = 2 * 60 * 1000; // 2 minutes
-const maxHints = 4;
-const hintMessages = [
-  "Still there? 😊 Let me know when you're ready!",
-  "If you're stuck, feel free to ask for a hint! 💡",
-  "Don't worry if it's tricky — I'm here to help! 💪",
-  "Want to try the next one or need a small push? 🚀"
-];
-
-
-
-function ChatBot({ darkMode }) {
+function ChatBot({ darkMode, code }) {
   const [messages, setMessages] = useState([
     { sender: 'bot', text: 'Hi! I’m your MAANG DSA interviewer 👨‍💻. Let’s start when you’re ready.' }
   ]);
@@ -25,18 +14,10 @@ function ChatBot({ darkMode }) {
   const [loading, setLoading] = useState(false);
   const [isSpeaking, setIsSpeaking] = useState(false);
   const messagesEndRef = useRef(null);
-  const inactivityTimerRef = useRef(null);
-  const hintCountRef = useRef(0);
 
   useEffect(() => {
     scrollToBottom();
   }, [messages, loading]);
-
-  useEffect(() => {
-    resetInactivityTimer();
-    hintCountRef.current = 0; // Reset hint count only once on mount
-    return () => clearTimeout(inactivityTimerRef.current);
-  }, []);
 
   const scrollToBottom = () => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
@@ -69,7 +50,6 @@ function ChatBot({ darkMode }) {
   };
 
   const listenToUser = () => {
-    resetInactivityTimer();
     const speechConfig = SpeechSDK.SpeechConfig.fromSubscription(speechKey, serviceRegion);
     speechConfig.speechRecognitionLanguage = 'en-US';
     const audioConfig = SpeechSDK.AudioConfig.fromDefaultMicrophoneInput();
@@ -85,11 +65,7 @@ function ChatBot({ darkMode }) {
     });
   };
 
-  const isHintMessage = (text) => hintMessages.includes(text);
-
   const handleSend = async (customInput) => {
-    resetInactivityTimer();
-
     const messageText = customInput || input;
     if (!messageText.trim()) return;
 
@@ -100,21 +76,36 @@ function ChatBot({ darkMode }) {
     setLoading(true);
 
     try {
-      // Filter out hint messages before sending to backend
-      const filteredMessages = newMessages.filter((msg) => !isHintMessage(msg.text));
+      // Check for code review command
+      if (
+        messageText.toLowerCase().includes("review my code") ||
+        messageText.toLowerCase().includes("give feedback on my code") ||
+        messageText.toLowerCase().includes("analyze my code")
+      ) {
+        const reviewRes = await axios.post('http://localhost:5002/review-code', {
+          code: code || "// No code provided.",
+          language: 'cpp' // Make this dynamic later if needed
+        });
 
+        const botResponse = { sender: 'bot', text: reviewRes.data.content };
+        setMessages((prev) => [...prev, botResponse]);
+        speakText(reviewRes.data.content);
+        return;
+      }
+
+      // Default chat flow
+      const lastBotMessage = messages.slice().reverse().find(msg => msg.sender === 'bot');
       const payload = {
-        messages: filteredMessages.map((msg) => ({
-          role: msg.sender === 'bot' ? 'assistant' : 'user',
-          content: msg.text,
-        })),
+        question: lastBotMessage?.text || '',
+        answer: messageText,
       };
 
-      const res = await axios.post('http://localhost:5000/ask', payload);
+      const res = await axios.post('http://localhost:5002/ask', payload);
       const botResponse = { sender: 'bot', text: res.data.content };
 
       setMessages((prev) => [...prev, botResponse]);
       speakText(res.data.content);
+
     } catch (err) {
       console.error(err);
       setMessages((prev) => [...prev, {
@@ -124,26 +115,6 @@ function ChatBot({ darkMode }) {
     } finally {
       setLoading(false);
     }
-  };
-
-  const resetInactivityTimer = () => {
-    clearTimeout(inactivityTimerRef.current);
-    scheduleNextHint(); // Only reset timer, not hint count
-  };
-
-  const scheduleNextHint = () => {
-    if (hintCountRef.current >= maxHints) return;
-
-    inactivityTimerRef.current = setTimeout(() => {
-      const hint = hintMessages[hintCountRef.current];
-      const hintMessage = { sender: 'bot', text: hint };
-
-      setMessages((prev) => [...prev, hintMessage]);
-      speakText(hint);
-      hintCountRef.current += 1;
-
-      scheduleNextHint(); // Schedule next if under max
-    }, inactivityInterval);
   };
 
   return (
@@ -166,10 +137,7 @@ function ChatBot({ darkMode }) {
         <textarea
           rows="1"
           value={input}
-          onChange={(e) => {
-            setInput(e.target.value);
-            resetInactivityTimer();
-          }}
+          onChange={(e) => setInput(e.target.value)}
           onKeyDown={(e) => {
             if (e.key === 'Enter' && !e.shiftKey) {
               e.preventDefault();
